@@ -31,7 +31,7 @@
             }
             .canvas-wrapper {
                 position: absolute;
-                top: 50%; left: 50%;
+                top: 40%; left: 50%;
                 transform: translate(-50%, -50%);
             }
             /* 印刷時に隠すUI */
@@ -48,7 +48,7 @@
     <input type="file" id="file-input" accept="image/*">
     <button id="print-btn" class="print-btn">印刷用データ作成</button>
     <div id="rotate-container">
-        <p class="note-text" style="font-size: 13px; color: #ff69b4; font-weight: bold; margin-bottom: 10px;">明るい円の内側が缶バッジになります</p>
+        <p class="note-text" style="font-size: 13px; color: #ff69b4; font-weight: bold; margin-bottom: 10px;">明るい円の部分が缶バッジになります</p>
         <p style="font-size: 12px; color: #666; margin-bottom: 5px;">画像を回す</p>
         <input type="range" id="rotate-slider" min="-180" max="180" value="0" style="width: 200px;">
     </div>
@@ -96,8 +96,8 @@
             // ★Apple補正 & 余白3mmの計算
             // Apple製品の場合：縮小を逆算して「91mm」と申告（これで実寸が66mm付近になる狙い）
             // かつ、用紙の端(89mm)から確実に離れるように、少し内側にマージンを持たせる
-            const outputCanvasSize = useAppleFix ? 910 : 660; 
-            const displaySizeStyle = useAppleFix ? '91mm' : '66mm'; 
+            const outputCanvasSize = useAppleFix ? 920 : 660; 
+            const displaySizeStyle = useAppleFix ? '92mm' : '66mm'; 
 
             const resultCanvas = cropper.getCroppedCanvas({ width: outputCanvasSize, height: outputCanvasSize });
             const finalCanvas = document.createElement('canvas');

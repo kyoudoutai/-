@@ -90,66 +90,78 @@
     </div>
 
     <script>
-        let cropper;
-        const fileInput = document.getElementById('file-input');
-        const image = document.getElementById('target-image');
-        const printBtn = document.getElementById('print-btn');
-        const rotateSlider = document.getElementById('rotate-slider');
-        const canvasWrapper = document.getElementById('canvas-wrapper');
+       let cropper;
+    const fileInput = document.getElementById('file-input');
+    const image = document.getElementById('target-image');
+    const printBtn = document.getElementById('print-btn');
+    const rotateSlider = document.getElementById('rotate-slider');
+    const canvasWrapper = document.getElementById('canvas-wrapper');
 
-        fileInput.addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            const reader = new FileReader();
-            reader.onload = (event) => {
-                image.src = event.target.result;
-                document.getElementById('initial-guide').style.display = 'none';
-                printBtn.style.display = 'inline-block';
-                document.getElementById('rotate-container').style.display = 'block';
-                if (cropper) { cropper.destroy(); }
-                cropper = new Cropper(image, {
-                    aspectRatio: 1, viewMode: 1, dragMode: 'move', autoCropArea: 0.85,
-                    guides: false, center: false, highlight: false,
-                    cropBoxMovable: false, cropBoxResizable: false, background: false, modal: false
-                });
-            };
-            reader.readAsDataURL(file);
-        });
+    // ★端末判定ロジック
+    // iOS端末、またはMac上のSafariを判定
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+    const useAppleFix = isIOS || isSafari;
 
-        rotateSlider.addEventListener('input', (e) => { if (cropper) { cropper.rotateTo(e.target.value); } });
+    fileInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            image.src = event.target.result;
+            document.getElementById('initial-guide').style.display = 'none';
+            printBtn.style.display = 'inline-block';
+            document.getElementById('rotate-container').style.display = 'block';
+            if (cropper) { cropper.destroy(); }
+            cropper = new Cropper(image, {
+                aspectRatio: 1, viewMode: 1, dragMode: 'move', autoCropArea: 0.85,
+                guides: false, center: false, highlight: false,
+                cropBoxMovable: false, cropBoxResizable: false, background: false, modal: false
+            });
+        };
+        reader.readAsDataURL(file);
+    });
 
-        printBtn.addEventListener('click', () => {
-            if (!cropper) return;
+    rotateSlider.addEventListener('input', (e) => { if (cropper) { cropper.rotateTo(e.target.value); } });
 
-            // 1. 高解像度キャンバスを作成（実寸66mmを300dpi相当で計算）
-            const resultCanvas = cropper.getCroppedCanvas({ width: 780, height: 780 });
-            
-            // 2. 印刷用キャンバスを生成
-            const finalCanvas = document.createElement('canvas');
-            finalCanvas.width = 780;
-            finalCanvas.height = 780;
-            const ctx = finalCanvas.getContext('2d');
+    printBtn.addEventListener('click', () => {
+        if (!cropper) return;
 
-            // 3. 円形にクリップして描画
-            ctx.beginPath();
-            ctx.arc(390, 390, 390, 0, Math.PI * 2);
-            ctx.clip();
-            ctx.drawImage(resultCanvas, 0, 0, 780, 780);
+        // ★Apple製品なら少し大きめのデータを作成し、それ以外は標準サイズにする
+        // iPhoneで48mmになる場合、(66/48) = 1.375倍 ほどの補正が必要なケースもあります
+        // まずはあなたが提案した数値付近で調整します
+        const outputSize = useAppleFix ? 900 : 780; 
+        const printSizeMM = useAppleFix ? '76mm' : '66mm'; // 66mmにするために、iPhoneには「76mm」と嘘をつく
 
-            // 4. 外枠の線を引く（66mm用）
-            ctx.restore();
-            ctx.strokeStyle = "#bbb";
-            ctx.lineWidth = 1;
-            ctx.beginPath();
-            ctx.arc(390, 390, 389, 0, Math.PI * 2);
-            ctx.stroke();
+        const resultCanvas = cropper.getCroppedCanvas({ width: outputSize, height: outputSize });
+        
+        const finalCanvas = document.createElement('canvas');
+        finalCanvas.width = outputSize;
+        finalCanvas.height = outputSize;
+        const ctx = finalCanvas.getContext('2d');
 
-            // 5. 画面にセットして印刷
-            canvasWrapper.innerHTML = '';
-            canvasWrapper.appendChild(finalCanvas);
-            
-            // 6. 実行！
-            setTimeout(() => { window.print(); }, 200);
-        });
-    </script>
+        // 円形に切り抜き
+        ctx.beginPath();
+        ctx.arc(outputSize/2, outputSize/2, outputSize/2, 0, Math.PI * 2);
+        ctx.clip();
+        ctx.drawImage(resultCanvas, 0, 0, outputSize, outputSize);
+
+        // 外枠の線
+        ctx.restore();
+        ctx.strokeStyle = "#bbb";
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.arc(outputSize/2, outputSize/2, (outputSize/2) - 1, 0, Math.PI * 2);
+        ctx.stroke();
+
+        // CSSでの表示サイズを端末ごとに切り替え
+        finalCanvas.style.width = printSizeMM;
+        finalCanvas.style.height = printSizeMM;
+
+        canvasWrapper.innerHTML = '';
+        canvasWrapper.appendChild(finalCanvas);
+        
+        setTimeout(() => { window.print(); }, 200);
+    });
+</script>   
 </body>
 </html>

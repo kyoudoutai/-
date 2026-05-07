@@ -23,33 +23,45 @@
         #print-canvas-container { display: none; }
 
         @media print {
+    /* 用紙自体を「横向き（landscape）」として定義 */
     @page { 
-        size: 89mm 127mm; 
+        size: 127mm 89mm; 
         margin: 0; 
     }
+    
     html, body { 
-        width: 89mm; height: 127mm; 
-        margin: 0 !important; padding: 0 !important; 
+        width: 127mm; 
+        height: 89mm; 
+        margin: 0 !important; 
+        padding: 0 !important; 
         overflow: hidden; 
-    }
-    #print-canvas-container { 
-        display: block !important; 
-        position: fixed; top: 0; left: 0; 
-        width: 89mm; height: 127mm; 
         background: white;
     }
+
+    #print-canvas-container { 
+        display: block !important; 
+        position: fixed; 
+        top: 0; 
+        left: 0; 
+        width: 127mm; 
+        height: 89mm; 
+    }
+
     .canvas-wrapper {
         position: absolute;
-        top: 50%; left: 50%;
-        /* ★iPhoneの縮小規制を回避するため、90度回転させて配置 */
-        transform: translate(-50%, -50%) rotate(90deg);
+        /* 127mm×89mmの紙に対して、中央に66mmを配置 */
+        top: 50%; 
+        left: 50%;
+        transform: translate(-50%, -50%); /* 回転(rotate)は不要になりました */
     }
+
     canvas {
+        /* ここで「絶対的な66mm」を死守する */
         width: 66mm !important;
         height: 66mm !important;
     }
 
-    /* 【重要】ここが残しておくべき部分！印刷時に邪魔なUIを消す命令 */
+    /* 印刷時に不要なUIを隠す設定はそのまま残す */
     h1, .editor-wrapper, #file-input, .print-btn, #rotate-container, .note-text, .initial-guide { 
         display: none !important; 
     }

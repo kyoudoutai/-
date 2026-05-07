@@ -23,24 +23,39 @@
         #print-canvas-container { display: none; }
 
         @media print {
-            @page { size: 89mm 127mm; margin: 0; }
-            html, body { width: 89mm; height: 127mm; margin: 0 !important; padding: 0 !important; overflow: hidden; }
-            #print-canvas-container { 
-                display: block !important; 
-                position: fixed; top: 0; left: 0; width: 89mm; height: 127mm; background: white; z-index: 9999;
-            }
-            .canvas-wrapper {
-                position: relative; width: 89mm; height: 127mm;
-            }
-            canvas {
-                position: absolute;
-                top: 10mm; /* 上部余白 */
-                left: 11.5mm; /* (89-66)/2 = 11.5mm で中央 */
-                width: 66mm !important;
-                height: 66mm !important;
-            }
-            h1, .editor-wrapper, #file-input, .print-btn, #rotate-container, .note-text, .initial-guide { display: none !important; }
-        }
+    @page { 
+        size: 89mm 127mm; 
+        margin: 0; 
+    }
+    html, body { 
+        width: 89mm; height: 127mm; 
+        margin: 0 !important; padding: 0 !important; 
+        overflow: hidden; 
+    }
+    #print-canvas-container { 
+        display: block !important; 
+        position: fixed; top: 0; left: 0; 
+        width: 89mm; height: 127mm; 
+        background: white;
+    }
+    .canvas-wrapper {
+        position: absolute;
+        top: 50%; left: 50%;
+        /* ★iPhoneの縮小規制を回避するため、90度回転させて配置 */
+        transform: translate(-50%, -50%) rotate(90deg);
+    }
+    canvas {
+        width: 66mm !important;
+        height: 66mm !important;
+    }
+
+    /* 【重要】ここが残しておくべき部分！印刷時に邪魔なUIを消す命令 */
+    h1, .editor-wrapper, #file-input, .print-btn, #rotate-container, .note-text, .initial-guide { 
+        display: none !important; 
+    }
+}
+
+
     </style>
 </head>
 <body>

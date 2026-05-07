@@ -61,22 +61,36 @@
 
         /* --- 印刷バグ修正版スタイル --- */
         @media print {
-            /* html, body の余白を徹底的にゼロにする */
-            html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
-            
-            /* 画面上の要素を消す */
-            body > *:not(#print-area) { display: none !important; }
-            
-            @page { size: 89mm 127mm; margin: 0; }
-            
-            #print-area {
-                position: fixed; /* absoluteより強力に固定 */
-                top: 0; left: 0;
-                width: 89mm; height: 127mm;
-                display: flex; align-items: center; justify-content: center;
-                background: white;
-                page-break-after: avoid; /* 改ページを禁止 */
-            }
+    /* 用紙設定：L判(89mm x 127mm)を強制 */
+    @page {
+        size: 89mm 127mm;
+        margin: 0; /* 余白をゼロにして勝手なズレを防ぐ */
+    }
+
+    body {
+        width: 89mm;
+        height: 127mm;
+        margin: 0 !important;
+        padding: 0 !important;
+        overflow: hidden; /* はみ出しをカット */
+        -webkit-print-color-adjust: exact; /* 色を正確に出す */
+    }
+
+    /* プレビュー画像（印刷用データ）の設定 */
+    #previewCanvas {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 89mm !important; /* 横幅を用紙ぴったりに固定 */
+        height: auto !important;
+        display: block !important;
+    }
+
+    /* 印刷に不要なボタンやタイトルを全部消す */
+    h1, .upload-container, .notes, #rotate-container, button, .cropper-container {
+        display: none !important;
+    }
+}
 
             .cut-line {
                 width: 66mm; height: 66mm;

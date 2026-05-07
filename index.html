@@ -31,7 +31,7 @@
             }
             .canvas-wrapper {
                 position: absolute;
-                top: 35%; left: 50%;
+                top: 38%; left: 50%;
                 transform: translate(-50%, -50%);
             }
             /* 印刷時に隠すUI */
@@ -96,8 +96,8 @@
             // ★Apple補正 & 余白3mmの計算
             // Apple製品の場合：縮小を逆算して「91mm」と申告（これで実寸が66mm付近になる狙い）
             // かつ、用紙の端(89mm)から確実に離れるように、少し内側にマージンを持たせる
-            const outputCanvasSize = useAppleFix ? 920 : 660; 
-            const displaySizeStyle = useAppleFix ? '92mm' : '66mm'; 
+            const outputCanvasSize = useAppleFix ? 930 : 660; 
+            const displaySizeStyle = useAppleFix ? '93mm' : '66mm'; 
 
             const resultCanvas = cropper.getCroppedCanvas({ width: outputCanvasSize, height: outputCanvasSize });
             const finalCanvas = document.createElement('canvas');

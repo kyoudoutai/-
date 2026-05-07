@@ -90,6 +90,18 @@
     h1, .upload-container, .notes, #rotate-container, button, .cropper-container {
         display: none !important;
     }
+
+/* Cropper.jsのデフォルトのグレーの円を強制的に消す */
+.cropper-dashed, .cropper-point, .cropper-line {
+    border: none !important;
+    background-color: transparent !important;
+    opacity: 0 !important;
+}
+
+/* ついでに、回転した時のはみ出しも隠す */
+.cropper-crop-box, .cropper-view-box {
+    border-radius: 50%;
+}    
 }
 
             .cut-line {
@@ -160,8 +172,11 @@
                     autoCropArea: 0.85, 
                     guides: false, center: false, highlight: false,
                     cropBoxMovable: false, cropBoxResizable: false, background: false,
+                    /* Cropper.jsのデフォルトのグレーの円を強制的に消す */
                     checkOrientation: true, // これを追加！
                     rotatable: true,       // これも一応追加！
+                    background:false,
+                    modal:false,  
                 });
             };
             reader.readAsDataURL(file);

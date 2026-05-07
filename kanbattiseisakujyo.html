@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>缶バッジ制作所</title>
+
+    <meta name="robots" content="noindex, nofollow">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
+    
+    <style>
+        body { text-align: center; font-family: 'Zen Maru Gothic', sans-serif !important; background-color: #ffffff; padding: 40px 20px; }
+        
+        .editor-wrapper {
+            position: relative; width: 320px; height: 320px; margin: 0 auto 30px;
+            background: #f0f0f0; border-radius: 8px; display: flex;
+            align-items: center; justify-content: center; overflow: hidden;
+        }
+
+        .initial-guide {
+            position: absolute; width: 240px; height: 240px;
+            border: 2px dashed #ccc; border-radius: 50%; z-index: 5; pointer-events: none;
+        }
+        .initial-guide::after {
+            /* \A が改行の合図です */
+            content: "56mmの缶バッジが\A 作れます";
+            /* 改行を有効にする設定 */
+            white-space: pre-wrap; 
+            
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 12px;
+            line-height: 1.6; /* 行の間隔 */
+            color: #aaa; 
+            letter-spacing: 0.1em;
+        }
+
+        .cropper-view-box {
+            border-radius: 50%;
+            outline: 5mm solid rgba(0, 0, 0, 0.4);
+            outline-offset: -5mm;
+            box-shadow: 0 0 0 500px rgba(0, 0, 0, 0.4);
+        }
+        .cropper-face { background-color: transparent !important; opacity: 1; }
+
+        input[type="file"] { margin-bottom: 20px; }
+        .print-btn { 
+            display: none; padding: 12px 40px; font-size: 16px; font-weight: bold; 
+            cursor: pointer; border-radius: 30px; border: none; 
+            background: #28a745; color: #fff; margin: 20px auto;
+        }
+        
+        .note-text { font-size: 11px; color: #999; margin-top: 10px; line-height: 1.6; }
+
+        /* --- 印刷バグ修正版スタイル --- */
+        @media print {
+    /* 用紙設定：L判(89mm x 127mm)を強制 */
+    @page {
+        size: 89mm 127mm;
+        margin: 0; /* 余白をゼロにして勝手なズレを防ぐ */
+    }
+
+    body {
+        width: 89mm;
+        height: 127mm;
+        margin: 0 !important;
+        padding: 0 !important;
+        overflow: hidden; /* はみ出しをカット */
+        -webkit-print-color-adjust: exact; /* 色を正確に出す */
+    }
+
+    /* プレビュー画像（印刷用データ）の設定 */
+    #previewCanvas {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 89mm !important; /* 横幅を用紙ぴったりに固定 */
+        height: auto !important;
+        display: block !important;
+    }
+
+    /* 印刷に不要なボタンやタイトルを全部消す */
+    h1, .upload-container, .notes, #rotate-container, button, .cropper-container {
+        display: none !important;
+    }
+}
+
+            .cut-line {
+                width: 66mm; height: 66mm;
+                border: 0.1mm solid #bbb;
+                border-radius: 50%;
+                display: flex; align-items: center; justify-content: center;
+                overflow: hidden;
+                box-sizing: border-box; /* 枠線が外にはみ出さないように */
+            }
+            .printed-image { width: 100%; height: 100%; object-fit: cover; }
+        }
+    </style>
+</head>
+<body>
+
+    <h1 style="font-size: 20px; font-weight: normal; letter-spacing: 0.2em; margin-bottom: 30px;">缶バッジ制作所</h1>
+    
+    <div class="editor-wrapper" id="wrapper">
+        <div id="initial-guide" class="initial-guide"></div>
+        <img id="target-image" style="display: block; max-width: 100%;">
+    </div>
+
+    <input type="file" id="file-input" accept="image/*">
+    <button id="print-btn" class="print-btn">印刷用データ作成</button>
+
+    <div id="rotate-container" style="margin: 20px 0; display: none;">
+    <p style="font-size: 12px; color: #666; margin-bottom: 8px;">画像を回す</p>
+    <input type="range" id="rotate-slider" min="-180" max="180" value="0" style="width: 200px;">
+</div>
+
+    <div class="note-text">
+        明るい円の内側がバッジの表面になります<br>
+        周りの暗い部分は裏側に巻き込まれます
+    </div>
+
+    <div id="print-area">
+        <div class="cut-line">
+            <img id="output-image" class="printed-image">
+        </div>
+    </div>
+
+    <script>
+        let cropper;
+        const fileInput = document.getElementById('file-input');
+        const image = document.getElementById('target-image');
+        const guide = document.getElementById('initial-guide');
+        const printBtn = document.getElementById('print-btn');
+        const outputImage = document.getElementById('output-image');
+
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                image.src = event.target.result;
+                guide.style.display = 'none';
+                printBtn.style.display = 'inline-block';
+                // スライダーを包んでいるdivを表示させる
+                document.getElementById('rotate-container').style.display = 'block';
+                // スライダーの値を0（回転なし）にリセット
+                rotateSlider.value = 0;
+                
+                if (cropper) { cropper.destroy(); }
+                cropper = new Cropper(image, {
+                    aspectRatio: 1,
+                    viewMode: 1,
+                    dragMode: 'move',
+                    autoCropArea: 0.85, 
+                    guides: false, center: false, highlight: false,
+                    cropBoxMovable: false, cropBoxResizable: false, background: false,
+                    checkOrientation: true, // これを追加！
+                    rotatable: true,       // これも一応追加！
+                });
+            };
+            reader.readAsDataURL(file);
+        });
+
+        // 回転スライダーの動きを画像に伝える
+const rotateSlider = document.getElementById('rotate-slider');
+
+rotateSlider.addEventListener('input', (e) => {
+    if (cropper) {
+        // スライダーの値をそのまま角度として画像に反映！
+        cropper.rotateTo(e.target.value);
+    }
+});
+
+        document.getElementById('print-btn').addEventListener('click', () => {
+            if (!cropper) return;
+            // 印刷品質を上げるため少し大きめの1500pxで書き出し
+            const canvas = cropper.getCroppedCanvas({ width: 1500, height: 1500 });
+            outputImage.onload = () => { window.print(); };
+            outputImage.src = canvas.toDataURL('image/png');
+        });
+    </script>
+</body>
+</html>

@@ -23,51 +23,20 @@
         #print-canvas-container { display: none; }
 
         @media print {
-    /* 用紙自体を「横向き（landscape）」として定義 */
-    @page { 
-        size: 127mm 89mm; 
-        margin: 0; 
-    }
-    
-    html, body { 
-        width: 127mm; 
-        height: 89mm; 
-        margin: 0 !important; 
-        padding: 0 !important; 
-        overflow: hidden; 
-        background: white;
-    }
-
-    #print-canvas-container { 
-        display: block !important; 
-        position: fixed; 
-        top: 0; 
-        left: 0; 
-        width: 127mm; 
-        height: 89mm; 
-    }
-
-    .canvas-wrapper {
-        position: absolute;
-        /* 127mm×89mmの紙に対して、中央に66mmを配置 */
-        top: 50%; 
-        left: 50%;
-        transform: translate(-50%, -50%); /* 回転(rotate)は不要になりました */
-    }
-
-    canvas {
-        /* ここで「絶対的な66mm」を死守する */
-        width: 66mm !important;
-        height: 66mm !important;
-    }
-
-    /* 印刷時に不要なUIを隠す設定はそのまま残す */
-    h1, .editor-wrapper, #file-input, .print-btn, #rotate-container, .note-text, .initial-guide { 
-        display: none !important; 
-    }
-}
-
-
+            @page { size: 89mm 127mm; margin: 0; }
+            html, body { width: 89mm; height: 127mm; margin: 0 !important; padding: 0 !important; overflow: hidden; background: white; }
+            #print-canvas-container { 
+                display: block !important; 
+                position: fixed; top: 0; left: 0; width: 89mm; height: 127mm; background: white; z-index: 9999;
+            }
+            .canvas-wrapper {
+                position: absolute;
+                top: 50%; left: 50%;
+                transform: translate(-50%, -50%);
+            }
+            /* 印刷時に隠すUI */
+            h1, .editor-wrapper, #file-input, .print-btn, #rotate-container, .note-text, .initial-guide { display: none !important; }
+        }
     </style>
 </head>
 <body>
@@ -84,84 +53,85 @@
         <input type="range" id="rotate-slider" min="-180" max="180" value="0" style="width: 200px;">
     </div>
 
-    <!-- 印刷専用のコンテナ -->
     <div id="print-canvas-container">
         <div id="canvas-wrapper" class="canvas-wrapper"></div>
     </div>
 
     <script>
-       let cropper;
-    const fileInput = document.getElementById('file-input');
-    const image = document.getElementById('target-image');
-    const printBtn = document.getElementById('print-btn');
-    const rotateSlider = document.getElementById('rotate-slider');
-    const canvasWrapper = document.getElementById('canvas-wrapper');
+        let cropper;
+        const fileInput = document.getElementById('file-input');
+        const image = document.getElementById('target-image');
+        const printBtn = document.getElementById('print-btn');
+        const rotateSlider = document.getElementById('rotate-slider');
+        const canvasWrapper = document.getElementById('canvas-wrapper');
 
-    // ★端末判定ロジック
-    // iOS端末、またはMac上のSafariを判定
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-    const useAppleFix = isIOS || isSafari;
+        // 端末判定
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+        const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+        const useAppleFix = isIOS || isSafari;
 
-    fileInput.addEventListener('change', (e) => {
-        const file = e.target.files[0];
-        const reader = new FileReader();
-        reader.onload = (event) => {
-            image.src = event.target.result;
-            document.getElementById('initial-guide').style.display = 'none';
-            printBtn.style.display = 'inline-block';
-            document.getElementById('rotate-container').style.display = 'block';
-            if (cropper) { cropper.destroy(); }
-            cropper = new Cropper(image, {
-                aspectRatio: 1, viewMode: 1, dragMode: 'move', autoCropArea: 0.85,
-                guides: false, center: false, highlight: false,
-                cropBoxMovable: false, cropBoxResizable: false, background: false, modal: false
-            });
-        };
-        reader.readAsDataURL(file);
-    });
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                image.src = event.target.result;
+                document.getElementById('initial-guide').style.display = 'none';
+                printBtn.style.display = 'inline-block';
+                document.getElementById('rotate-container').style.display = 'block';
+                if (cropper) { cropper.destroy(); }
+                cropper = new Cropper(image, {
+                    aspectRatio: 1, viewMode: 1, dragMode: 'move', autoCropArea: 0.85,
+                    guides: false, center: false, highlight: false,
+                    cropBoxMovable: false, cropBoxResizable: false, background: false, modal: false
+                });
+            };
+            reader.readAsDataURL(file);
+        });
 
-    rotateSlider.addEventListener('input', (e) => { if (cropper) { cropper.rotateTo(e.target.value); } });
+        rotateSlider.addEventListener('input', (e) => { if (cropper) { cropper.rotateTo(e.target.value); } });
 
-    printBtn.addEventListener('click', () => {
-        if (!cropper) return;
+        printBtn.addEventListener('click', () => {
+            if (!cropper) return;
 
-        // ★Apple製品なら少し大きめのデータを作成し、それ以外は標準サイズにする
-        // iPhoneで48mmになる場合、(66/48) = 1.375倍 ほどの補正が必要なケースもあります
-        // まずはあなたが提案した数値付近で調整します
-        const outputSize = useAppleFix ? 900 : 780; 
-        const printSizeMM = useAppleFix ? '76mm' : '66mm'; // 66mmにするために、iPhoneには「76mm」と嘘をつく
+            // ★Apple補正 & 余白3mmの計算
+            // Apple製品の場合：縮小を逆算して「91mm」と申告（これで実寸が66mm付近になる狙い）
+            // かつ、用紙の端(89mm)から確実に離れるように、少し内側にマージンを持たせる
+            const outputCanvasSize = useAppleFix ? 910 : 660; 
+            const displaySizeStyle = useAppleFix ? '91mm' : '66mm'; 
 
-        const resultCanvas = cropper.getCroppedCanvas({ width: outputSize, height: outputSize });
-        
-        const finalCanvas = document.createElement('canvas');
-        finalCanvas.width = outputSize;
-        finalCanvas.height = outputSize;
-        const ctx = finalCanvas.getContext('2d');
+            const resultCanvas = cropper.getCroppedCanvas({ width: outputCanvasSize, height: outputCanvasSize });
+            const finalCanvas = document.createElement('canvas');
+            finalCanvas.width = outputCanvasSize;
+            finalCanvas.height = outputCanvasSize;
+            const ctx = finalCanvas.getContext('2d');
 
-        // 円形に切り抜き
-        ctx.beginPath();
-        ctx.arc(outputSize/2, outputSize/2, outputSize/2, 0, Math.PI * 2);
-        ctx.clip();
-        ctx.drawImage(resultCanvas, 0, 0, outputSize, outputSize);
+            // 円形に描画
+            ctx.beginPath();
+            ctx.arc(outputCanvasSize/2, outputCanvasSize/2, outputCanvasSize/2, 0, Math.PI * 2);
+            ctx.clip();
+            ctx.drawImage(resultCanvas, 0, 0, outputCanvasSize, outputCanvasSize);
 
-        // 外枠の線
-        ctx.restore();
-        ctx.strokeStyle = "#bbb";
-        ctx.lineWidth = 1;
-        ctx.beginPath();
-        ctx.arc(outputSize/2, outputSize/2, (outputSize/2) - 1, 0, Math.PI * 2);
-        ctx.stroke();
+            // ガイド線
+            ctx.restore();
+            ctx.strokeStyle = "#bbb";
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.arc(outputCanvasSize/2, outputCanvasSize/2, (outputCanvasSize/2) - 1, 0, Math.PI * 2);
+            ctx.stroke();
 
-        // CSSでの表示サイズを端末ごとに切り替え
-        finalCanvas.style.width = printSizeMM;
-        finalCanvas.style.height = printSizeMM;
+            // スタイル適用
+            finalCanvas.style.width = displaySizeStyle;
+            finalCanvas.style.height = displaySizeStyle;
 
-        canvasWrapper.innerHTML = '';
-        canvasWrapper.appendChild(finalCanvas);
-        
-        setTimeout(() => { window.print(); }, 200);
-    });
-</script>   
+            // ★余白確保のためのマージン追加
+            // iPhoneが「これなら安全圏だ」と思うように、上下左右にゆとりを持たせる
+            finalCanvas.style.margin = "3mm"; 
+
+            canvasWrapper.innerHTML = '';
+            canvasWrapper.appendChild(finalCanvas);
+            
+            setTimeout(() => { window.print(); }, 200);
+        });
+    </script>
 </body>
 </html>
